@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alias Game – Communication Skills</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background:#101726;
+    color:#fff;
+    margin:0;
+    padding:20px;
+  }
+  h1 {
+    text-align:center;
+    margin-top:0;
+  }
+  .top-wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .controls {
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    justify-content:center;
+    margin-bottom:16px;
+  }
+  select, button, input {
+    padding:8px 12px;
+    border-radius:8px;
+    border:none;
+    background:#1e2a47;
+    color:white;
+    font-size:14px;
+  }
+  button:hover {
+    background:#2d3a60;
+    cursor:pointer;
+  }
+  .grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:10px;
+  }
+  .card {
+    background:#192341;
+    border-radius:12px;
+    padding:20px;
+    text-align:center;
+    box-shadow:0 2px 6px rgba(0,0,0,0.3);
+  }
+  .badge {
+    font-size:12px;
+    opacity:0.7;
+  }
+  .word {
+    font-size:22px;
+    font-weight:bold;
+    margin-top:10px;
+  }
+  #timeLeft {
+    font-weight:bold;
+    color:#5eead4;
+  }
+  .scoreboard {
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:16px;
+    margin:8px 0 18px;
+    align-items:flex-end;
+  }
+  .team-box {
+    background:#151d33;
+    padding:10px 14px;
+    border-radius:10px;
+    min-width:150px;
+    text-align:center;
+  }
+  .team-label {
+    font-size:11px;
+    opacity:0.7;
+  }
+  .team-name {
+    width:100%;
+    margin-top:4px;
+    margin-bottom:4px;
+    text-align:center;
+    font-weight:bold;
+    background:#0f1627;
+    border-radius:6px;
+    border:none;
+    padding:4px 6px;
+    color:#fff;
+  }
+  .score {
+    font-size:22px;
+    font-weight:bold;
+    margin:4px 0;
+    color:#5eead4;
+  }
+  .score-buttons {
+    display:flex;
+    gap:6px;
+    justify-content:center;
+    flex-wrap:wrap;
+    margin-top:4px;
+  }
+  .score-buttons button {
+    font-size:11px;
+    padding:6px 8px;
+  }
+  .hint {
+    font-size:11px;
+    text-align:center;
+    opacity:0.6;
+  }
+</style>
+</head>
+<body>
+<div class="top-wrap">
+  <h1>Alias · Communication Skills in the Workplace</h1>
+
+  <div class="controls">
+    <label>Mode:
+      <select id="mode">
+        <option value="grid" selected>Grid</option>
+        <option value="focus">Focus</option>
+      </select>
+    </label>
+    <label>Level:
+      <select id="level">
+        <option value="All" selected>All</option>
+        <option value="Easy">Easy</option>
+        <option value="Medium">Medium</option>
+      </select>
+    </label>
+    <button id="shuffle">Shuffle</button>
+    <button id="prev" style="display:none;">⟵ Prev</button>
+    <button id="next" style="display:none;">Next ⟶</button>
+    <label>Timer
+      <input id="timerSeconds" type="number" min="10" max="300" value="60" style="width:60px;"> s
+    </label>
+    <button id="startTimer">Start</button>
+    <span id="timeLeft">60s</span>
+  </div>
+
+  <div class="scoreboard">
+    <div class="team-box">
+      <div class="team-label">Team 1 name</div>
+      <input id="team1Name" class="team-name" value="Team 1">
+      <div class="score" id="score1">0</div>
+      <div class="score-buttons">
+        <button id="t1Plus">✅ Correct +1</button>
+        <button id="t1Minus">⏭ Skip / No guess -1</button>
+      </div>
+    </div>
+    <div class="team-box">
+      <div class="team-label">Team 2 name</div>
+      <input id="team2Name" class="team-name" value="Team 2">
+      <div class="score" id="score2">0</div>
+      <div class="score-buttons">
+        <button id="t2Plus">✅ Correct +1</button>
+        <button id="t2Minus">⏭ Skip / No guess -1</button>
+      </div>
+    </div>
+  </div>
+  <div class="hint">
+    Scoring rule: <b>+1</b> when a team guesses the word. <b>-1</b> when you skip or no one guesses it in time.
+    In Focus mode, score buttons automatically move to the next card.
+  </div>
+
+  <main id="main" class="grid"></main>
+</div>
+
+<script>
+const DATA = [
+  {"level":"Easy","word":"Email"},{"level":"Easy","word":"Meeting"},{"level":"Easy","word":"Conversation"},
+  {"level":"Easy","word":"Listening"},{"level":"Easy","word":"Talking"},{"level":"Easy","word":"Message"},
+  {"level":"Easy","word":"Feedback"},{"level":"Easy","word":"Phone"},{"level":"Easy","word":"Teamwork"},
+  {"level":"Easy","word":"Boss"},{"level":"Easy","word":"Coworker"},{"level":"Easy","word":"Question"},
+  {"level":"Easy","word":"Presentation"},{"level":"Easy","word":"Body language"},{"level":"Easy","word":"Chat"},
+  {"level":"Easy","word":"Note"},{"level":"Easy","word":"Agenda"},{"level":"Easy","word":"Discussion"},
+  {"level":"Easy","word":"Greeting"},{"level":"Easy","word":"Reply"},{"level":"Easy","word":"Schedule"},
+  {"level":"Easy","word":"Report"},{"level":"Easy","word":"Idea"},{"level":"Easy","word":"Update"},
+  {"level":"Easy","word":"Task"},{"level":"Easy","word":"Manager"},{"level":"Easy","word":"Client"},
+  {"level":"Easy","word":"Project"},{"level":"Easy","word":"Colleague"},{"level":"Easy","word":"Break"},
+  {"level":"Medium","word":"Negotiation"},{"level":"Medium","word":"Collaboration"},
+  {"level":"Medium","word":"Active listening"},{"level":"Medium","word":"Tone of voice"},
+  {"level":"Medium","word":"Nonverbal"},{"level":"Medium","word":"Eye contact"},
+  {"level":"Medium","word":"Misunderstanding"},{"level":"Medium","word":"Constructive criticism"},
+  {"level":"Medium","word":"Small talk"},{"level":"Medium","word":"Clarity"},
+  {"level":"Medium","word":"Conflict"},{"level":"Medium","word":"Rapport"},
+  {"level":"Medium","word":"Diplomacy"},{"level":"Medium","word":"Empathy"},
+  {"level":"Medium","word":"Open-mindedness"},{"level":"Medium","word":"Respect"},
+  {"level":"Medium","word":"Feedback culture"},{"level":"Medium","word":"Presentation skills"},
+  {"level":"Medium","word":"Facilitation"},{"level":"Medium","word":"Listening skills"},
+  {"level":"Medium","word":"Motivation"},{"level":"Medium","word":"Flexibility"},
+  {"level":"Medium","word":"Patience"},{"level":"Medium","word":"Assertiveness"},
+  {"level":"Medium","word":"Transparency"},{"level":"Medium","word":"Engagement"},
+  {"level":"Medium","word":"Problem-solving"},{"level":"Medium","word":"Cooperation"},
+  {"level":"Medium","word":"Adaptability"},{"level":"Medium","word":"Leadership"}
+];
+
+let state = {
+  mode: 'grid',
+  level: 'All',
+  index: 0,
+  order: [...Array(DATA.length).keys()],
+  timer: null,
+  timeLeft: 60,
+  scores: { t1: 0, t2: 0 }
+};
+
+const main = document.getElementById('main');
+const modeSel = document.getElementById('mode');
+const levelSel = document.getElementById('level');
+const shuffleBtn = document.getElementById('shuffle');
+const prevBtn = document.getElementById('prev');
+const nextBtn = document.getElementById('next');
+const timerSeconds = document.getElementById('timerSeconds');
+const startTimerBtn = document.getElementById('startTimer');
+const timeLeftEl = document.getElementById('timeLeft');
+const score1El = document.getElementById('score1');
+const score2El = document.getElementById('score2');
+const t1Plus = document.getElementById('t1Plus');
+const t1Minus = document.getElementById('t1Minus');
+const t2Plus = document.getElementById('t2Plus');
+const t2Minus = document.getElementById('t2Minus');
+
+function filteredIndices() {
+  return state.order.filter(i => state.level === 'All' || DATA[i].level === state.level);
+}
+
+function renderGrid() {
+  prevBtn.style.display = 'none';
+  nextBtn.style.display = 'none';
+  const indices = filteredIndices();
+  main.className = 'grid';
+  main.innerHTML = indices.map(i => `
+    <div class="card">
+      <div class="badge">${DATA[i].level}</div>
+      <div class="word">${DATA[i].word}</div>
+    </div>
+  `).join('');
+}
+
+function renderFocus() {
+  prevBtn.style.display = 'inline-block';
+  nextBtn.style.display = 'inline-block';
+  const indices = filteredIndices();
+  if (indices.length === 0) {
+    main.innerHTML = '<p>No cards.</p>';
+    return;
+  }
+  if (state.index >= indices.length) state.index = indices.length - 1;
+  const i = indices[state.index];
+  main.className = '';
+  main.innerHTML = `
+    <div class="card" style="font-size:24px; max-width:500px; margin:0 auto;">
+      <div class="badge">${DATA[i].level}</div>
+      <div class="word">${DATA[i].word}</div>
+    </div>
+  `;
+}
+
+function render() {
+  if (state.mode === 'grid') renderGrid(); else renderFocus();
+  timeLeftEl.textContent = state.timeLeft + 's';
+  score1El.textContent = state.scores.t1;
+  score2El.textContent = state.scores.t2;
+}
+
+function shuffle() {
+  for (let i = state.order.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [state.order[i], state.order[j]] = [state.order[j], state.order[i]];
+  }
+  state.index = 0;
+  render();
+}
+
+function nextCard() {
+  const indices = filteredIndices();
+  if (indices.length === 0) return;
+  state.index = (state.index + 1) % indices.length;
+  render();
+}
+
+function prevCard() {
+  const indices = filteredIndices();
+  if (indices.length === 0) return;
+  state.index = (state.index - 1 + indices.length) % indices.length;
+  render();
+}
+
+function addPoint(team) {
+  state.scores[team] += 1;
+  if (state.mode === 'focus') nextCard();
+  render();
+}
+
+function minusPoint(team) {
+  state.scores[team] -= 1;
+  if (state.mode === 'focus') nextCard();
+  render();
+}
+
+modeSel.addEventListener('change', e => {
+  state.mode = e.target.value;
+  render();
+});
+levelSel.addEventListener('change', e => {
+  state.level = e.target.value;
+  state.index = 0;
+  render();
+});
+shuffleBtn.addEventListener('click', shuffle);
+nextBtn.addEventListener('click', nextCard);
+prevBtn.addEventListener('click', prevCard);
+
+startTimerBtn.addEventListener('click', () => {
+  const secs = Math.max(10, Math.min(300, parseInt(timerSeconds.value || '60', 10)));
+  state.timeLeft = secs;
+  if (state.timer) clearInterval(state.timer);
+  state.timer = setInterval(() => {
+    state.timeLeft--;
+    timeLeftEl.textContent = state.timeLeft + 's';
+    if (state.timeLeft <= 0) {
+      clearInterval(state.timer);
+      state.timer = null;
+      timeLeftEl.textContent = 'Time!';
+    }
+  }, 1000);
+});
+
+t1Plus.addEventListener('click', () => addPoint('t1'));
+t1Minus.addEventListener('click', () => minusPoint('t1'));
+t2Plus.addEventListener('click', () => addPoint('t2'));
+t2Minus.addEventListener('click', () => minusPoint('t2'));
+
+render();
+</script>
+</body>
+</html>
