@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Alias Game – Communication Skills</title>
+<title>Alias Game – Communication Skills (with Glossary)</title>
 <style>
   body {
     font-family: Arial, sans-serif;
@@ -20,20 +20,25 @@
     max-width: 1100px;
     margin: 0 auto;
   }
-  .controls {
+  .controls, .glossary-controls {
     display:flex;
     flex-wrap:wrap;
     gap:10px;
     justify-content:center;
     margin-bottom:16px;
   }
-  select, button, input {
+  select, button, input, textarea {
     padding:8px 12px;
     border-radius:8px;
     border:none;
     background:#1e2a47;
     color:white;
     font-size:14px;
+  }
+  textarea {
+    width:min(100%, 720px);
+    height:120px;
+    line-height:1.35;
   }
   button:hover {
     background:#2d3a60;
@@ -51,9 +56,16 @@
     text-align:center;
     box-shadow:0 2px 6px rgba(0,0,0,0.3);
   }
+  .card.anim {
+    animation: slideIn 0.25s ease-out;
+  }
+  @keyframes slideIn {
+    from { opacity:0; transform:translateY(12px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
   .badge {
     font-size:12px;
-    opacity:0.7;
+    opacity:0.8;
   }
   .word {
     font-size:22px;
@@ -65,12 +77,20 @@
     color:#5eead4;
   }
   .scoreboard {
+    margin:8px 0 18px;
+  }
+  .scoreboard-top {
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .teams-row {
     display:flex;
     flex-wrap:wrap;
     justify-content:center;
     gap:16px;
-    margin:8px 0 18px;
-    align-items:flex-end;
   }
   .team-box {
     background:#151d33;
@@ -99,8 +119,11 @@
     font-size:22px;
     font-weight:bold;
     margin:4px 0;
-    color:#5eead4;
   }
+  .team-0 .score { color:#5eead4; }   /* teal */
+  .team-1 .score { color:#f97373; }   /* red */
+  .team-2 .score { color:#facc6b; }   /* yellow */
+  .team-3 .score { color:#4ade80; }   /* green */
   .score-buttons {
     display:flex;
     gap:6px;
@@ -117,12 +140,38 @@
     text-align:center;
     opacity:0.6;
   }
+  details {
+    background:#0d1426;
+    border:1px solid #2a3761;
+    border-radius:12px;
+    padding:10px 12px;
+  }
+  summary {
+    cursor:pointer;
+    font-weight:bold;
+    margin-bottom:8px;
+  }
+  .pill {
+    background:#0f1430;
+    border:1px solid #2d365f;
+    border-radius:999px;
+    padding:6px 10px;
+    font-size:12px;
+    color:#9aa3b2;
+  }
+  .footer {
+    margin-top:10px;
+    text-align:center;
+    color:#9aa3b2;
+    font-size:12px;
+  }
 </style>
 </head>
 <body>
 <div class="top-wrap">
   <h1>Alias · Communication Skills in the Workplace</h1>
 
+  <!-- Main controls -->
   <div class="controls">
     <label>Mode:
       <select id="mode">
@@ -135,6 +184,7 @@
         <option value="All" selected>All</option>
         <option value="Easy">Easy</option>
         <option value="Medium">Medium</option>
+        <option value="Glossary">Glossary</option>
       </select>
     </label>
     <button id="shuffle">Shuffle</button>
@@ -145,134 +195,317 @@
     </label>
     <button id="startTimer">Start</button>
     <span id="timeLeft">60s</span>
+    <button id="soundToggle">🔊 Sound: On</button>
+    <span class="pill" id="counts">—</span>
   </div>
 
+  <!-- Scoreboard with multi-team support -->
   <div class="scoreboard">
-    <div class="team-box">
-      <div class="team-label">Team 1 name</div>
-      <input id="team1Name" class="team-name" value="Team 1">
-      <div class="score" id="score1">0</div>
-      <div class="score-buttons">
-        <button id="t1Plus">✅ Correct +1</button>
-        <button id="t1Minus">⏭ Skip / No guess -1</button>
-      </div>
+    <div class="scoreboard-top">
+      <label>Teams:
+        <select id="teamCount">
+          <option value="2" selected>2 teams</option>
+          <option value="3">3 teams</option>
+          <option value="4">4 teams</option>
+        </select>
+      </label>
+      <button id="resetScores">Reset scores</button>
     </div>
-    <div class="team-box">
-      <div class="team-label">Team 2 name</div>
-      <input id="team2Name" class="team-name" value="Team 2">
-      <div class="score" id="score2">0</div>
-      <div class="score-buttons">
-        <button id="t2Plus">✅ Correct +1</button>
-        <button id="t2Minus">⏭ Skip / No guess -1</button>
+    <div class="teams-row">
+      <div class="team-box team-0" data-team="0">
+        <div class="team-label">Team 1 name</div>
+        <input class="team-name" value="Team 1">
+        <div class="score" id="score0">0</div>
+        <div class="score-buttons">
+          <button class="btnPlus" data-team="0">✅ +1</button>
+          <button class="btnMinus" data-team="0">⏭ -1</button>
+        </div>
+      </div>
+      <div class="team-box team-1" data-team="1">
+        <div class="team-label">Team 2 name</div>
+        <input class="team-name" value="Team 2">
+        <div class="score" id="score1">0</div>
+        <div class="score-buttons">
+          <button class="btnPlus" data-team="1">✅ +1</button>
+          <button class="btnMinus" data-team="1">⏭ -1</button>
+        </div>
+      </div>
+      <div class="team-box team-2" data-team="2" style="display:none;">
+        <div class="team-label">Team 3 name</div>
+        <input class="team-name" value="Team 3">
+        <div class="score" id="score2">0</div>
+        <div class="score-buttons">
+          <button class="btnPlus" data-team="2">✅ +1</button>
+          <button class="btnMinus" data-team="2">⏭ -1</button>
+        </div>
+      </div>
+      <div class="team-box team-3" data-team="3" style="display:none;">
+        <div class="team-label">Team 4 name</div>
+        <input class="team-name" value="Team 4">
+        <div class="score" id="score3">0</div>
+        <div class="score-buttons">
+          <button class="btnPlus" data-team="3">✅ +1</button>
+          <button class="btnMinus" data-team="3">⏭ -1</button>
+        </div>
       </div>
     </div>
   </div>
+
   <div class="hint">
     Scoring rule: <b>+1</b> when a team guesses the word. <b>-1</b> when you skip or no one guesses it in time.
     In Focus mode, score buttons automatically move to the next card.
   </div>
 
+  <!-- Vocabulary / Glossary editor -->
+  <details id="glossaryPanel">
+    <summary>📚 Vocabulary editor – add your own words (to any category)</summary>
+    <div class="glossary-controls">
+      <label>Category:
+        <select id="editLevel">
+          <option value="Easy">Easy</option>
+          <option value="Medium">Medium</option>
+          <option value="Glossary" selected>Glossary</option>
+        </select>
+      </label>
+    </div>
+    <div class="glossary-controls">
+      <textarea id="editInput" placeholder="Paste or type words here, one per line..."></textarea>
+    </div>
+    <div class="glossary-controls">
+      <button id="btnAddWords">Add to category</button>
+      <button id="btnReplaceWords">Replace category</button>
+      <button id="btnClearWords">Clear extra words</button>
+      <input type="file" id="fileImport" accept=".txt">
+      <button id="btnExportWords">Export .txt</button>
+      <span class="pill" id="editCount">0 words in extra list</span>
+    </div>
+    <div class="hint">
+      Note: Easy & Medium have a built-in base list. “Replace” / “Clear” only affect your <b>extra</b> words, the base set stays.
+    </div>
+  </details>
+
+  <!-- Cards container -->
   <main id="main" class="grid"></main>
+
+  <div class="footer" id="footerCounts"></div>
 </div>
 
 <script>
-const DATA = [
-  {"level":"Easy","word":"Email"},{"level":"Easy","word":"Meeting"},{"level":"Easy","word":"Conversation"},
-  {"level":"Easy","word":"Listening"},{"level":"Easy","word":"Talking"},{"level":"Easy","word":"Message"},
-  {"level":"Easy","word":"Feedback"},{"level":"Easy","word":"Phone"},{"level":"Easy","word":"Teamwork"},
-  {"level":"Easy","word":"Boss"},{"level":"Easy","word":"Coworker"},{"level":"Easy","word":"Question"},
-  {"level":"Easy","word":"Presentation"},{"level":"Easy","word":"Body language"},{"level":"Easy","word":"Chat"},
-  {"level":"Easy","word":"Note"},{"level":"Easy","word":"Agenda"},{"level":"Easy","word":"Discussion"},
-  {"level":"Easy","word":"Greeting"},{"level":"Easy","word":"Reply"},{"level":"Easy","word":"Schedule"},
-  {"level":"Easy","word":"Report"},{"level":"Easy","word":"Idea"},{"level":"Easy","word":"Update"},
-  {"level":"Easy","word":"Task"},{"level":"Easy","word":"Manager"},{"level":"Easy","word":"Client"},
-  {"level":"Easy","word":"Project"},{"level":"Easy","word":"Colleague"},{"level":"Easy","word":"Break"},
-  {"level":"Medium","word":"Negotiation"},{"level":"Medium","word":"Collaboration"},
-  {"level":"Medium","word":"Active listening"},{"level":"Medium","word":"Tone of voice"},
-  {"level":"Medium","word":"Nonverbal"},{"level":"Medium","word":"Eye contact"},
-  {"level":"Medium","word":"Misunderstanding"},{"level":"Medium","word":"Constructive criticism"},
-  {"level":"Medium","word":"Small talk"},{"level":"Medium","word":"Clarity"},
-  {"level":"Medium","word":"Conflict"},{"level":"Medium","word":"Rapport"},
-  {"level":"Medium","word":"Diplomacy"},{"level":"Medium","word":"Empathy"},
-  {"level":"Medium","word":"Open-mindedness"},{"level":"Medium","word":"Respect"},
-  {"level":"Medium","word":"Feedback culture"},{"level":"Medium","word":"Presentation skills"},
-  {"level":"Medium","word":"Facilitation"},{"level":"Medium","word":"Listening skills"},
-  {"level":"Medium","word":"Motivation"},{"level":"Medium","word":"Flexibility"},
-  {"level":"Medium","word":"Patience"},{"level":"Medium","word":"Assertiveness"},
-  {"level":"Medium","word":"Transparency"},{"level":"Medium","word":"Engagement"},
-  {"level":"Medium","word":"Problem-solving"},{"level":"Medium","word":"Cooperation"},
-  {"level":"Medium","word":"Adaptability"},{"level":"Medium","word":"Leadership"}
+// ---------- Base decks ----------
+const BASE_EASY = [
+  "Email","Meeting","Conversation","Listening","Talking","Message","Feedback","Phone",
+  "Teamwork","Boss","Coworker","Question","Presentation","Body language","Chat",
+  "Note","Agenda","Discussion","Greeting","Reply","Schedule","Report","Idea",
+  "Update","Task","Manager","Client","Project","Colleague","Break"
+];
+const BASE_MEDIUM = [
+  "Negotiation","Collaboration","Active listening","Tone of voice","Nonverbal","Eye contact",
+  "Misunderstanding","Constructive criticism","Small talk","Clarity","Conflict","Rapport","Diplomacy",
+  "Empathy","Open-mindedness","Respect","Feedback culture","Presentation skills","Facilitation",
+  "Listening skills","Motivation","Flexibility","Patience","Assertiveness","Transparency","Engagement",
+  "Problem-solving","Cooperation","Adaptability","Leadership"
 ];
 
+// ---------- Extra words (teacher-added) ----------
+const EXTRA_KEY = "aliasExtraWordsV1";
+let extras = { Easy: [], Medium: [], Glossary: [] };
+
+(function loadExtras() {
+  try {
+    const raw = localStorage.getItem(EXTRA_KEY);
+    if (raw) {
+      const obj = JSON.parse(raw);
+      if (obj && typeof obj === "object") {
+        extras.Easy = Array.isArray(obj.Easy) ? obj.Easy : [];
+        extras.Medium = Array.isArray(obj.Medium) ? obj.Medium : [];
+        extras.Glossary = Array.isArray(obj.Glossary) ? obj.Glossary : [];
+      }
+    } else {
+      // backwards compat: old glossary-only key
+      const gRaw = localStorage.getItem("aliasGlossary");
+      if (gRaw) {
+        try {
+          const arr = JSON.parse(gRaw);
+          if (Array.isArray(arr)) extras.Glossary = arr;
+        } catch(e){}
+      }
+    }
+  } catch(e) {}
+})();
+function saveExtras() {
+  localStorage.setItem(EXTRA_KEY, JSON.stringify(extras));
+}
+
+// ---------- Build full deck ----------
+function fullDeck() {
+  const deck = [];
+  BASE_EASY.forEach(w => deck.push({ level: "Easy", word: w }));
+  extras.Easy.forEach(w => deck.push({ level: "Easy", word: w }));
+  BASE_MEDIUM.forEach(w => deck.push({ level: "Medium", word: w }));
+  extras.Medium.forEach(w => deck.push({ level: "Medium", word: w }));
+  extras.Glossary.forEach(w => deck.push({ level: "Glossary", word: w }));
+  return deck;
+}
+
+// ---------- State ----------
 let state = {
-  mode: 'grid',
-  level: 'All',
+  mode: "grid",
+  level: "All",
   index: 0,
-  order: [...Array(DATA.length).keys()],
+  order: [...Array(fullDeck().length).keys()],
   timer: null,
   timeLeft: 60,
-  scores: { t1: 0, t2: 0 }
+  scores: [0,0,0,0],
+  teamCount: 2,
+  soundOn: true
 };
 
-const main = document.getElementById('main');
-const modeSel = document.getElementById('mode');
-const levelSel = document.getElementById('level');
-const shuffleBtn = document.getElementById('shuffle');
-const prevBtn = document.getElementById('prev');
-const nextBtn = document.getElementById('next');
-const timerSeconds = document.getElementById('timerSeconds');
-const startTimerBtn = document.getElementById('startTimer');
-const timeLeftEl = document.getElementById('timeLeft');
-const score1El = document.getElementById('score1');
-const score2El = document.getElementById('score2');
-const t1Plus = document.getElementById('t1Plus');
-const t1Minus = document.getElementById('t1Minus');
-const t2Plus = document.getElementById('t2Plus');
-const t2Minus = document.getElementById('t2Minus');
+// ---------- DOM refs ----------
+const main = document.getElementById("main");
+const modeSel = document.getElementById("mode");
+const levelSel = document.getElementById("level");
+const shuffleBtn = document.getElementById("shuffle");
+const prevBtn = document.getElementById("prev");
+const nextBtn = document.getElementById("next");
+const timerSeconds = document.getElementById("timerSeconds");
+const startTimerBtn = document.getElementById("startTimer");
+const timeLeftEl = document.getElementById("timeLeft");
+const countsEl = document.getElementById("counts");
+const footerCounts = document.getElementById("footerCounts");
+const soundToggle = document.getElementById("soundToggle");
 
+// scoreboard
+const teamCountSel = document.getElementById("teamCount");
+const resetScoresBtn = document.getElementById("resetScores");
+const teamBoxes = document.querySelectorAll(".team-box");
+const scoreEls = [
+  document.getElementById("score0"),
+  document.getElementById("score1"),
+  document.getElementById("score2"),
+  document.getElementById("score3")
+];
+
+// vocabulary editor
+const editLevelSel = document.getElementById("editLevel");
+const editInput = document.getElementById("editInput");
+const btnAddWords = document.getElementById("btnAddWords");
+const btnReplaceWords = document.getElementById("btnReplaceWords");
+const btnClearWords = document.getElementById("btnClearWords");
+const btnExportWords = document.getElementById("btnExportWords");
+const fileImport = document.getElementById("fileImport");
+const editCount = document.getElementById("editCount");
+
+// ---------- Helpers ----------
+function rebuildOrder() {
+  state.order = [...Array(fullDeck().length).keys()];
+}
 function filteredIndices() {
-  return state.order.filter(i => state.level === 'All' || DATA[i].level === state.level);
+  const deck = fullDeck();
+  return state.order.filter(i => state.level === "All" || deck[i].level === state.level);
+}
+function deckCounts() {
+  const d = fullDeck();
+  const easy = d.filter(x => x.level === "Easy").length;
+  const medium = d.filter(x => x.level === "Medium").length;
+  const gloss = d.filter(x => x.level === "Glossary").length;
+  return { easy, medium, gloss, total: d.length };
+}
+function updateCountsUI() {
+  const c = deckCounts();
+  const text = `Cards: ${c.total} • Easy: ${c.easy} • Medium: ${c.medium} • Glossary: ${c.gloss}`;
+  countsEl.textContent = text;
+  footerCounts.textContent = text;
+}
+function updateTeamVisibility() {
+  teamBoxes.forEach((box,i) => {
+    box.style.display = (i < state.teamCount) ? "block" : "none";
+  });
+}
+function updateScoresUI() {
+  for (let i = 0; i < scoreEls.length; i++) {
+    scoreEls[i].textContent = state.scores[i];
+  }
 }
 
+// ---------- Sound ----------
+let audioCtx = null;
+function ensureAudioCtx() {
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    audioCtx = new AC();
+  }
+  return audioCtx;
+}
+function playTone(freq, duration) {
+  if (!state.soundOn) return;
+  const ctx = ensureAudioCtx();
+  if (!ctx) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.frequency.value = freq;
+  gain.gain.value = 0.2;
+  const now = ctx.currentTime;
+  osc.start(now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+  osc.stop(now + duration);
+}
+function playSound(type) {
+  if (type === "correct") playTone(880, 0.15);
+  else if (type === "wrong") playTone(220, 0.18);
+  else if (type === "timerEnd") playTone(660, 0.3);
+}
+
+// ---------- Rendering ----------
 function renderGrid() {
-  prevBtn.style.display = 'none';
-  nextBtn.style.display = 'none';
+  prevBtn.style.display = "none";
+  nextBtn.style.display = "none";
+  const deck = fullDeck();
   const indices = filteredIndices();
-  main.className = 'grid';
+  main.className = "grid";
   main.innerHTML = indices.map(i => `
     <div class="card">
-      <div class="badge">${DATA[i].level}</div>
-      <div class="word">${DATA[i].word}</div>
+      <div class="badge">${deck[i].level}</div>
+      <div class="word">${deck[i].word}</div>
     </div>
-  `).join('');
+  `).join("");
 }
-
 function renderFocus() {
-  prevBtn.style.display = 'inline-block';
-  nextBtn.style.display = 'inline-block';
+  prevBtn.style.display = "inline-block";
+  nextBtn.style.display = "inline-block";
+  const deck = fullDeck();
   const indices = filteredIndices();
   if (indices.length === 0) {
-    main.innerHTML = '<p>No cards.</p>';
+    main.innerHTML = "<p>No cards.</p>";
     return;
   }
   if (state.index >= indices.length) state.index = indices.length - 1;
   const i = indices[state.index];
-  main.className = '';
+  main.className = "";
   main.innerHTML = `
     <div class="card" style="font-size:24px; max-width:500px; margin:0 auto;">
-      <div class="badge">${DATA[i].level}</div>
-      <div class="word">${DATA[i].word}</div>
+      <div class="badge">${deck[i].level}</div>
+      <div class="word">${deck[i].word}</div>
     </div>
   `;
+  const card = main.querySelector(".card");
+  if (card) {
+    card.classList.remove("anim");
+    void card.offsetWidth; // restart animation
+    card.classList.add("anim");
+  }
 }
-
 function render() {
-  if (state.mode === 'grid') renderGrid(); else renderFocus();
-  timeLeftEl.textContent = state.timeLeft + 's';
-  score1El.textContent = state.scores.t1;
-  score2El.textContent = state.scores.t2;
+  if (state.mode === "grid") renderGrid(); else renderFocus();
+  timeLeftEl.textContent = state.timeLeft + "s";
+  updateCountsUI();
+  updateScoresUI();
+  updateTeamVisibility();
 }
 
+// ---------- Card navigation ----------
 function shuffle() {
   for (let i = state.order.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -281,66 +514,187 @@ function shuffle() {
   state.index = 0;
   render();
 }
-
 function nextCard() {
-  const indices = filteredIndices();
-  if (indices.length === 0) return;
-  state.index = (state.index + 1) % indices.length;
+  const idx = filteredIndices();
+  if (!idx.length) return;
+  state.index = (state.index + 1) % idx.length;
   render();
 }
-
 function prevCard() {
-  const indices = filteredIndices();
-  if (indices.length === 0) return;
-  state.index = (state.index - 1 + indices.length) % indices.length;
+  const idx = filteredIndices();
+  if (!idx.length) return;
+  state.index = (state.index - 1 + idx.length) % idx.length;
   render();
 }
 
-function addPoint(team) {
-  state.scores[team] += 1;
-  if (state.mode === 'focus') nextCard();
+// ---------- Scoring ----------
+function addPoint(teamIndex) {
+  state.scores[teamIndex] += 1;
+  playSound("correct");
+  if (state.mode === "focus") nextCard();
+  render();
+}
+function minusPoint(teamIndex) {
+  state.scores[teamIndex] -= 1;
+  playSound("wrong");
+  if (state.mode === "focus") nextCard();
   render();
 }
 
-function minusPoint(team) {
-  state.scores[team] -= 1;
-  if (state.mode === 'focus') nextCard();
-  render();
-}
-
-modeSel.addEventListener('change', e => {
-  state.mode = e.target.value;
-  render();
-});
-levelSel.addEventListener('change', e => {
-  state.level = e.target.value;
-  state.index = 0;
-  render();
-});
-shuffleBtn.addEventListener('click', shuffle);
-nextBtn.addEventListener('click', nextCard);
-prevBtn.addEventListener('click', prevCard);
-
-startTimerBtn.addEventListener('click', () => {
-  const secs = Math.max(10, Math.min(300, parseInt(timerSeconds.value || '60', 10)));
+// ---------- Timer ----------
+startTimerBtn.addEventListener("click", () => {
+  const secs = Math.max(10, Math.min(300, parseInt(timerSeconds.value || "60", 10)));
   state.timeLeft = secs;
   if (state.timer) clearInterval(state.timer);
   state.timer = setInterval(() => {
     state.timeLeft--;
-    timeLeftEl.textContent = state.timeLeft + 's';
+    timeLeftEl.textContent = state.timeLeft + "s";
     if (state.timeLeft <= 0) {
       clearInterval(state.timer);
       state.timer = null;
-      timeLeftEl.textContent = 'Time!';
+      timeLeftEl.textContent = "Time!";
+      playSound("timerEnd");
     }
   }, 1000);
 });
 
-t1Plus.addEventListener('click', () => addPoint('t1'));
-t1Minus.addEventListener('click', () => minusPoint('t1'));
-t2Plus.addEventListener('click', () => addPoint('t2'));
-t2Minus.addEventListener('click', () => minusPoint('t2'));
+// ---------- Events: main controls ----------
+modeSel.addEventListener("change", e => {
+  state.mode = e.target.value;
+  render();
+});
+levelSel.addEventListener("change", e => {
+  state.level = e.target.value;
+  state.index = 0;
+  render();
+});
+shuffleBtn.addEventListener("click", shuffle);
+nextBtn.addEventListener("click", nextCard);
+prevBtn.addEventListener("click", prevCard);
 
+// sound toggle
+soundToggle.addEventListener("click", () => {
+  state.soundOn = !state.soundOn;
+  soundToggle.textContent = state.soundOn ? "🔊 Sound: On" : "🔇 Sound: Off";
+});
+
+// scoreboard events
+teamCountSel.addEventListener("change", e => {
+  state.teamCount = parseInt(e.target.value, 10) || 2;
+  render();
+});
+resetScoresBtn.addEventListener("click", () => {
+  state.scores = [0,0,0,0];
+  render();
+});
+document.querySelectorAll(".btnPlus").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const team = parseInt(btn.dataset.team, 10);
+    addPoint(team);
+  });
+});
+document.querySelectorAll(".btnMinus").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const team = parseInt(btn.dataset.team, 10);
+    minusPoint(team);
+  });
+});
+
+// ---------- Vocabulary editor ----------
+function parseLines(text) {
+  return text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+}
+function getAllForLevel(level) {
+  if (level === "Easy") return BASE_EASY.concat(extras.Easy);
+  if (level === "Medium") return BASE_MEDIUM.concat(extras.Medium);
+  if (level === "Glossary") return extras.Glossary.slice();
+  return [];
+}
+function addWordsToLevel(level, words) {
+  const existing = new Set(getAllForLevel(level).map(w => w.toLowerCase()));
+  const extraList = extras[level];
+  words.forEach(w => {
+    const key = w.toLowerCase();
+    if (!existing.has(key)) {
+      extraList.push(w);
+      existing.add(key);
+    }
+  });
+  saveExtras();
+}
+function replaceWordsAtLevel(level, words) {
+  extras[level] = words.slice();
+  saveExtras();
+}
+function clearExtraAtLevel(level) {
+  extras[level] = [];
+  saveExtras();
+}
+function updateEditCount() {
+  const lvl = editLevelSel.value;
+  const n = extras[lvl].length;
+  editCount.textContent = `${n} extra words in ${lvl}`;
+}
+
+btnAddWords.addEventListener("click", () => {
+  const lvl = editLevelSel.value;
+  const words = parseLines(editInput.value);
+  if (!words.length) return;
+  addWordsToLevel(lvl, words);
+  rebuildOrder();
+  updateEditCount();
+  render();
+});
+
+btnReplaceWords.addEventListener("click", () => {
+  const lvl = editLevelSel.value;
+  const words = parseLines(editInput.value);
+  replaceWordsAtLevel(lvl, words);
+  rebuildOrder();
+  updateEditCount();
+  render();
+});
+
+btnClearWords.addEventListener("click", () => {
+  const lvl = editLevelSel.value;
+  clearExtraAtLevel(lvl);
+  rebuildOrder();
+  updateEditCount();
+  render();
+});
+
+btnExportWords.addEventListener("click", () => {
+  const lvl = editLevelSel.value;
+  const all = getAllForLevel(lvl);
+  const txt = all.join("\n");
+  const blob = new Blob([txt], { type: "text/plain" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = lvl.toLowerCase() + "_words.txt";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+fileImport.addEventListener("change", async (e) => {
+  const lvl = editLevelSel.value;
+  const file = e.target.files[0];
+  if (!file) return;
+  const text = await file.text();
+  const words = parseLines(text);
+  addWordsToLevel(lvl, words);
+  rebuildOrder();
+  updateEditCount();
+  render();
+  e.target.value = "";
+});
+
+editLevelSel.addEventListener("change", () => {
+  updateEditCount();
+});
+
+// ---------- Init ----------
+rebuildOrder();
+updateEditCount();
 render();
 </script>
 </body>
